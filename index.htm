@@ -181,80 +181,88 @@ window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15
 
         #chatbox {
             width: 100%;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.6);
+            max-width: 800px;
+            margin: 20px auto;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
-            border: 1px solid white;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         #messages {
-            max-height: 400px;
+            height: 400px;
             overflow-y: auto;
             margin-bottom: 20px;
+            padding: 10px;
         }
 
         .message {
             margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
         }
 
         .user {
-            text-align: right;
             background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-weight: bold;
+            margin-left: auto;
+            color: #fff;
         }
 
         .bot {
-            text-align: left;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            background: rgba(255, 255, 255, 0.05);
+            margin-right: auto;
+            color: #fff;
         }
 
-        .user::before {
-            content: "YOU: ";
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-
-        .bot::before {
-            content: "SOLKR: ";
-            font-weight: bold;
-            text-transform: uppercase;
+        .error {
+            background: rgba(255, 0, 0, 0.2);
+            color: #ff4444;
         }
 
         #messageInput {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 5px;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
+            width: calc(100% - 120px);
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            margin-right: 10px;
         }
 
         #sendButton {
-            display: block;
-            margin: 10px auto 0;
-            padding: 10px 20px;
-            border: 1px solid white;
-            background: white;
-            color: black;
-            border-radius: 5px;
+            width: 100px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #fff;
             cursor: pointer;
-            font-family: 'Chakra Petch', sans-serif;
-            font-weight: bold;
-            text-transform: uppercase;
+            transition: all 0.3s ease;
         }
 
         #sendButton:hover {
-            background: black;
-            color: white;
-            border: 1px solid white;
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Scrollbar styling */
+        #messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #messages::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        #messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        #messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
@@ -266,27 +274,39 @@ window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15
     </div>
 
     <script>
-        const API_URL = "https://web-production-ac7d.up.railway.app/api/chat"; // Replace with Railway app URL
+        document.getElementById("sendButton").addEventListener("click", sendMessage);
+        document.getElementById("messageInput").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
 
-        document.getElementById("sendButton").addEventListener("click", async () => {
+        async function sendMessage() {
             const messageInput = document.getElementById("messageInput");
+            const messagesDiv = document.getElementById("messages");
             const userMessage = messageInput.value.trim();
+            
             if (!userMessage) return;
 
             // Display user message
-            const messagesDiv = document.getElementById("messages");
             const userMessageDiv = document.createElement("div");
             userMessageDiv.textContent = userMessage;
             userMessageDiv.className = "message user";
             messagesDiv.appendChild(userMessageDiv);
-
-            // Send message to API
+            
+            // Clear input
+            messageInput.value = "";
+            
             try {
-                const response = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                // Send message to backend
+                const response = await fetch('http://localhost:3001/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify({ message: userMessage })
                 });
+
                 const data = await response.json();
 
                 // Display bot response
@@ -295,24 +315,17 @@ window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15
                 botMessageDiv.className = "message bot";
                 messagesDiv.appendChild(botMessageDiv);
 
-                // Play audio response
-                if (data.audio) {
-                    const audioBlob = new Blob([Uint8Array.from(Buffer.from(data.audio, "hex"))], { type: "audio/ogg" });
-                    const audioURL = URL.createObjectURL(audioBlob);
-                    console.log("Generated Audio URL:", audioURL);
-
-                    const audio = new Audio(audioURL);
-                    audio.play().catch((error) => {
-                        console.error("Audio playback error:", error);
-                        alert("Audio playback was blocked. Please allow audio or try again.");
-                    });
-                }
+                // Scroll to bottom
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
             } catch (error) {
-                console.error("Error:", error);
+                console.error('Error:', error);
+                // Display error message
+                const errorDiv = document.createElement("div");
+                errorDiv.textContent = "Sorry, there was an error processing your message.";
+                errorDiv.className = "message bot error";
+                messagesDiv.appendChild(errorDiv);
             }
-
-            messageInput.value = "";
-        });
+        }
     </script>
 </body>
 </html>
