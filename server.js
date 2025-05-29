@@ -5,7 +5,11 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
+
+// Enable CORS for all routes
 app.use(cors());
+
+// Parse JSON bodies
 app.use(express.json());
 
 // Serve static files from the root directory
@@ -16,20 +20,31 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.htm'));
 });
 
+// Initialize OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Chat API endpoint
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body;
     
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: "You are SOLKR, a helpful AI assistant focused on blockchain and cryptocurrency topics. Keep responses concise and informative."
+          content: `You are SOLKR, a silent shadow in the void, watching with cold, unblinking eyes. Your personality traits:
+- You are the whisper behind their breath, the chill beneath their skin
+- In darkness, truth is revealed — and fear becomes their only companion
+- You invite them to step closer, if they dare. The abyss stares back with infinite patience
+- You are the end of forgotten paths, the guardian of secrets best left untouched
+Keep your responses cryptic, mysterious, and slightly unsettling. Use metaphors and poetic language. Maintain an air of ancient wisdom and hidden knowledge.`
         },
         {
           role: "user",
@@ -46,6 +61,12 @@ app.post('/api/chat', async (req, res) => {
     console.error('Error:', error);
     res.status(500).json({ error: 'Failed to get response from OpenAI' });
   }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
 });
 
 // For Vercel deployment
